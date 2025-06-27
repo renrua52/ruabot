@@ -24,8 +24,9 @@ def piece2letter(p):
     return ch
 
 def parseMove(move: str): # Might be very buggy!
-    if move[1] == 'x':
-        move = move[0]+move[2:]
+    move = move.replace('x', '')
+    if move[-1] == '+' or move[-1] == '#':
+        move = move[:-1]
 
     if move == 'O-O':
         return None, None, None, move
@@ -37,25 +38,27 @@ def parseMove(move: str): # Might be very buggy!
         flag = move[-1]
         move = move[:-2]
 
+
     if 'a' <= move[0] <= 'h':
+        move = 'P'+move
+
+    # Now move is in the format: piece + (specifier) + target square
+
+    p = move[0]
+    if p == 'P':
         piece = 'pawn'
-    else:
-        p = move[0]
-        if p == 'K':
-            piece = 'king'
-        if p == 'N':
-            piece = 'knight'
-        if p == 'Q':
-            piece = 'queen'
-        if p == 'R':
-            piece = 'rook'
-        if p == 'B':
-            piece = 'bishop'
+    if p == 'K':
+        piece = 'king'
+    if p == 'N':
+        piece = 'knight'
+    if p == 'Q':
+        piece = 'queen'
+    if p == 'R':
+        piece = 'rook'
+    if p == 'B':
+        piece = 'bishop'
 
-        move = move[1:]
-
-    if move[-1] == '+' or move[-1] == '#':
-        move = move[:-1]
+    move = move[1:]
 
     specifier = move[:-2]
     target_square = move[-2:]
@@ -65,17 +68,19 @@ def parseMove(move: str): # Might be very buggy!
 def meetSpecifier(x, y, spec):
     if spec == "":
         return True
-    
-    if 'a' <= spec <= 'h':
-        x_spec = ord(spec)-ord('a')
-        return x == x_spec
-    else:
-        y_spec = ord(spec)-ord('1')
-        return y == y_spec
+    if len(spec) == 1:
+        if 'a' <= spec <= 'h':
+            x_spec = ord(spec)-ord('a')
+            return x == x_spec
+        else:
+            y_spec = ord(spec)-ord('1')
+            return y == y_spec
+    if len(spec) == 2:
+        return (x, y) == square2xy(spec)
+    raise ValueError("Illegal move format: wrong specifier.")
     
 if __name__ == '__main__':
     x, y = square2xy("g5")
     print(meetSpecifier(x, y, "5"))
-
-    print(parseMove('g3'))
+    print(parseMove('exd6'))
     

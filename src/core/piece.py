@@ -39,16 +39,16 @@ class Pawn(Piece):
     piece_type = 'pawn'
     
 class Rook(Piece):
-    piece_type = 'rook' 
+    piece_type = 'rook'
 
 class Knight(Piece):
-    piece_type = 'knight' 
+    piece_type = 'knight'
 
 class Bishop(Piece):
-    piece_type = 'bishop' 
+    piece_type = 'bishop'
 
 class Queen(Piece):
-    piece_type = 'queen' 
+    piece_type = 'queen'
 
 class King(Piece):
-    piece_type = 'king' 
+    piece_type = 'king'
