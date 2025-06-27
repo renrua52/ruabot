@@ -57,8 +57,9 @@ class Board:
                         if p.color == 'b':
                             self.pieces['b'][p.piece_type].add(p)
 
+            #TODO: maintain these features
             self.turn = elements[1]
-            self.castle = elements[2]
+            self.castle = list(elements[2])
             self.enpassant = elements[3]
             self.fifty_count = int(elements[4])
             self.move_count = int(elements[5])
@@ -71,7 +72,6 @@ class Board:
     
     def getPiece(self, x, y):
         return self.grid[x][y]
-
     def getPieceFromSquare(self, square):
         x, y = square2xy(square)
         return self.getPiece(x, y)
@@ -132,9 +132,13 @@ class Board:
                     xt, yt = step(xt, yt)
                     if not inRange(xt, yt):
                         break
-                    if isEmpty(xt, yt) or not sameColor(xs, ys, xt, yt):
+                    if isEmpty(xt, yt):
                         viable.append((xt, yt))
                         protecting.append((xt, yt))
+                    elif not sameColor(xs, ys, xt, yt):
+                        viable.append((xt, yt))
+                        protecting.append((xt, yt))
+                        break
                     elif sameColor(xs, ys, xt, yt):
                         protecting.append((xt, yt))
                         break
@@ -151,9 +155,13 @@ class Board:
                     xt, yt = step(xt, yt)
                     if not inRange(xt, yt):
                         break
-                    if isEmpty(xt, yt) or not sameColor(xs, ys, xt, yt):
+                    if isEmpty(xt, yt):
                         viable.append((xt, yt))
                         protecting.append((xt, yt))
+                    elif not sameColor(xs, ys, xt, yt):
+                        viable.append((xt, yt))
+                        protecting.append((xt, yt))
+                        break
                     elif sameColor(xs, ys, xt, yt):
                         protecting.append((xt, yt))
                         break
@@ -175,9 +183,13 @@ class Board:
                     xt, yt = step(xt, yt)
                     if not inRange(xt, yt):
                         break
-                    if isEmpty(xt, yt) or not sameColor(xs, ys, xt, yt):
+                    if isEmpty(xt, yt):
                         viable.append((xt, yt))
                         protecting.append((xt, yt))
+                    elif not sameColor(xs, ys, xt, yt):
+                        viable.append((xt, yt))
+                        protecting.append((xt, yt))
+                        break
                     elif sameColor(xs, ys, xt, yt):
                         protecting.append((xt, yt))
                         break
@@ -225,12 +237,15 @@ class Board:
                 (xs+1, ys+step),
                 (xs-1, ys+step)
             ]:
-                if inRange(xt, yt) and not isEmpty(xt, yt):
-                    if self.grid[xt][yt].color != p.color:
-                        viable.append((xt, yt))
+                if inRange(xt, yt):
+                    if isEmpty(xt, yt):
                         protecting.append((xt, yt))
-                    elif sameColor(xs, ys, xt, yt):
-                        protecting.append((xt, yt))
+                    else:
+                        if self.grid[xt][yt].color != p.color:
+                            viable.append((xt, yt))
+                            protecting.append((xt, yt))
+                        elif sameColor(xs, ys, xt, yt):
+                            protecting.append((xt, yt))
 
         return viable, protecting
 
@@ -239,6 +254,8 @@ class Board:
         for key, pcs in self.pieces[color].items():
             for p in pcs:
                 _, protected = self.pieceMoves(p.x, p.y, protection_only=True)
+                if (4, 4) in protected:
+                    print(p.x, p.y)
                 ret = ret.union(set(protected))
         return ret
 
@@ -261,21 +278,87 @@ class Board:
 
         return is_capture
     
+    def canCastle(self, ch):
+        color = 'w' if ch == ch.upper() else 'b'
+        if not ch in self.castle:
+            return False
+        isEmpty = lambda x, y: self.grid[x][y] is None
+        if ch == 'K':
+            if not isEmpty(*square2xy('f1')) or \
+            not isEmpty(*square2xy('g1')):
+                return False
+            if square2xy('f1') in self.protectedSquares(swapColor(color)) or \
+            square2xy('g1') in self.protectedSquares(swapColor(color)):
+                return False
+        if ch == 'k':
+            if not isEmpty(*square2xy('f8')) or \
+            not isEmpty(*square2xy('g8')):
+                return False
+            if square2xy('f8') in self.protectedSquares(swapColor(color)) or \
+            square2xy('g8') in self.protectedSquares(swapColor(color)):
+                return False
+        if ch == 'Q':
+            if not isEmpty(*square2xy('c1')) or \
+            not isEmpty(*square2xy('d1')):
+                return False
+            if square2xy('c1') in self.protectedSquares(swapColor(color)) or \
+            square2xy('d1') in self.protectedSquares(swapColor(color)):
+                return False
+        if ch == 'q':
+            if not isEmpty(*square2xy('c8')) or \
+            not isEmpty(*square2xy('d8')):
+                return False
+            if square2xy('c8') in self.protectedSquares(swapColor(color)) or \
+            square2xy('d8') in self.protectedSquares(swapColor(color)):
+                return False
+        return True
+    
     def makeMoveFromNotation(self, notation):
-        pc, target_sq, spec, castle = parseMove(notation)
+        pc, target_sq, spec, flag = parseMove(notation)
 
-        if castle is not None:
-            raise NotImplementedError
-        
+        if flag in ['O-O', 'O-O-O']:
+            if flag == 'O-O':
+                ch = 'K' if self.turn == 'w' else 'k'
+            elif flag == 'O-O-O':
+                ch = 'Q' if self.turn == 'w' else 'q'
+            if not self.canCastle(ch):
+                raise ValueError(f"Illegal castle {flag}.")
+            
+            if ch == 'K':
+                self.makeMove(4, 0, 6, 0)
+                self.makeMove(7, 0, 5, 0)
+            if ch == 'k':
+                self.makeMove(4, 7, 6, 7)
+                self.makeMove(7, 7, 5, 7)
+            if ch == 'Q':
+                self.makeMove(4, 0, 2, 0)
+                self.makeMove(0, 0, 3, 0)
+            if ch == 'q':
+                self.makeMove(4, 7, 2, 7)
+                self.makeMove(0, 7, 3, 7)
+
+            return
+            
         for p in self.pieces[self.turn][pc]:
             if meetSpecifier(p.x, p.y, spec) and square2xy(target_sq) in self.pieceMoves(p.x, p.y)[0]:
                 xs, ys = p.x, p.y
                 break
         else:
-            raise ValueError("Illegal move.")
-        
+            p = list(self.pieces['b']['king'])[0]
+            print(self.printPieces())
+            print(self.protectedSquares('w'))
+            raise ValueError(f"Illegal move: {notation}")
         xt, yt = square2xy(target_sq)
         self.makeMove(xs, ys, xt, yt)
+        if flag is not None:
+            self.clearSquare(xt, yt)
+            flag = flag.upper() if self.turn == 'w' else flag.lower()
+            pr = instantiatePiece(flag, xt, yt)
+            self.grid[xt][yt] = pr
+            if pr.color == 'w':
+                self.pieces['w'][pr.piece_type].add(pr)
+            if pr.color == 'b':
+                self.pieces['b'][pr.piece_type].add(pr)
     
     def isCheck(self):
         king = list(self.pieces[self.turn]['king'])[0]
@@ -283,14 +366,13 @@ class Board:
             return True
         return False
         
-    def isCheckmate(self):
+    def isCheckmate(self): # Not working yet because list_all_moves does not force check dodge.
         king = list(self.pieces[self.turn]['king'])[0]
-        return self.isCheck() and len(self.pieceMoves(king.x, king.y)[0]) == 0
+        return self.isCheck() and len(self.list_all_moves()) == 0
     
     def isStalemate(self):
         king = list(self.pieces[self.turn]['king'])[0]
-        return not self.isCheck() and len(self.pieceMoves(king.x, king.y)[0]) == 0
-
+        return not self.isCheck() and len(self.list_all_moves()) == 0
     
     def switchTurn(self):
         self.turn = swapColor(self.turn)
@@ -306,6 +388,16 @@ class Board:
                     ch = piece2letter(self.grid[x][y])
                     print(ch, end=' ')
             print()
+    
+    def printPieces(self):
+        print('===== White Pieces =====')
+        for key, pcs in self.pieces['w'].items(): 
+            for p in pcs:
+                print(key, 'at', xy2square(p.x, p.y))
+        print('===== Black Pieces =====')
+        for key, pcs in self.pieces['b'].items(): 
+            for p in pcs:
+                print(key, 'at', xy2square(p.x, p.y))
 
     def list_all_moves(self):
         ret = []
@@ -317,10 +409,12 @@ class Board:
         return ret
         
 if __name__ == '__main__':
-    board = Board(positionFEN="2k1r3/3rbpp1/Q1p2n1p/2Pp4/8/1P2P2P/PB3PP1/R1R3K1 b - - 0 21")
+    board = Board(positionFEN="8/7p/4pkp1/R2p1p2/7P/1P3KP1/P2r4/8 b - - 0 36")
+
+    board.printGrid()
 
     # print(board.legalMoves(0, 1))
-    # board.makeMoveFromNotation('e4')
+    # board.makeMoveFromNotation('O-O')
     # board.switchTurn()
     # board.makeMoveFromNotation('e5')
     # board.switchTurn()
@@ -336,11 +430,12 @@ if __name__ == '__main__':
     # board.switchTurn()
     # board.makeMoveFromNotation('Ba6')
     # board.switchTurn()
-
+    print()
     board.printGrid()
+    board.printPieces()
     print(board.list_all_moves())
     # print(board.pieceMoves(4, 0, True)[1])
-    print(board.protectedSquares('w'))
-    print(board.isCheck())
-    print(board.isCheckmate())
-    print(board.isStalemate())
+    print(board.protectedSquares('b'))
+    # print(board.isCheck())
+    # print(board.isCheckmate())
+    # print(board.isStalemate())

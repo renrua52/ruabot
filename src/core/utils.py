@@ -23,13 +23,21 @@ def piece2letter(p):
         ch = ch.upper()
     return ch
 
-def parseMove(move):
-    if move == 'O-O':
-        return None, None, None, 'short'
-    if move == 'O-O-O':
-        return None, None, None, 'long'
+def parseMove(move: str): # Might be very buggy!
+    if move[1] == 'x':
+        move = move[0]+move[2:]
 
-    if 'a' <= move[0] <= 'e':
+    if move == 'O-O':
+        return None, None, None, move
+    if move == 'O-O-O':
+        return None, None, None, move
+    
+    flag = None
+    if move[-2] == '=':
+        flag = move[-1]
+        move = move[:-2]
+
+    if 'a' <= move[0] <= 'h':
         piece = 'pawn'
     else:
         p = move[0]
@@ -52,7 +60,7 @@ def parseMove(move):
     specifier = move[:-2]
     target_square = move[-2:]
 
-    return piece, target_square, specifier, None
+    return piece, target_square, specifier, flag
 
 def meetSpecifier(x, y, spec):
     if spec == "":
@@ -68,4 +76,6 @@ def meetSpecifier(x, y, spec):
 if __name__ == '__main__':
     x, y = square2xy("g5")
     print(meetSpecifier(x, y, "5"))
+
+    print(parseMove('g3'))
     
