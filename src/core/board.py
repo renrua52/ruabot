@@ -41,9 +41,6 @@ class Board:
                 raise Exception('Invalid FEN format')
            
             for i in range(len(ranks)):
-                # if len(ranks[i]) != self.width:
-                #     raise Exception('Invalid FEN format')
-
                 ranks[i] = re.sub(r'\d+', lambda match: '-'*int(match.group(0)), ranks[i])
 
                 for j in range(len(ranks[i])):
@@ -536,7 +533,7 @@ class Board:
             return True
         return False
         
-    def isCheckmate(self): #TODO: Not working yet because list_all_moves does not force check dodge.
+    def isCheckmate(self):
         king = list(self.pieces[self.turn]['king'])[0]
         return self.isCheck() and len(self.list_all_moves()) == 0
     
@@ -579,10 +576,9 @@ class Board:
         return ret
         
 if __name__ == '__main__':
-    board = Board(positionFEN="8/8/3p4/KPp4r/1R3p1k/8/4P1P1/8 w - c6 0 1")
+    board = Board(positionFEN="r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4")
     # board = Board(positionFEN="8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1")
     board.printGrid()
     print(board.list_all_moves())
-    # board.makeMoveFromNotation('bxc6')
-    # board.printGrid()
-    # print(board.isCheck())
+    print(board.isCheckmate())
+    print(board.isStalemate())

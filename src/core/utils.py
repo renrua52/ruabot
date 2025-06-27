@@ -23,7 +23,7 @@ def piece2letter(p):
         ch = ch.upper()
     return ch
 
-def parseMove(move: str): # Might be very buggy!
+def parseMove(move: str):
     move = move.replace('x', '')
     if move[-1] == '+' or move[-1] == '#':
         move = move[:-1]
@@ -79,8 +79,4 @@ def meetSpecifier(x, y, spec):
         return (x, y) == square2xy(spec)
     raise ValueError("Illegal move format: wrong specifier.")
     
-if __name__ == '__main__':
-    x, y = square2xy("g5")
-    print(meetSpecifier(x, y, "5"))
-    print(parseMove('exd6'))
     
