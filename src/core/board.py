@@ -1,5 +1,5 @@
-from piece import instantiatePiece
-from utils import square2xy, xy2square, parseMove, meetSpecifier, piece2letter, swapColor
+from core.piece import instantiatePiece
+from core.utils import square2xy, xy2square, parseMove, meetSpecifier, piece2letter, swapColor
 
 import copy
 import re
@@ -65,8 +65,9 @@ class Board:
         except Exception as e:
             print(f'Error: {e}')
 
-    def generateFEN(self):
+    def generateFEN(self): # Untested
         raise NotImplementedError
+    
 
     
     def getPiece(self, x, y):
@@ -211,18 +212,13 @@ class Board:
             ]:
                 if inRange(xt, yt):
                     if self.enpassant == xy2square(xt, yt):
-                        assert isEmpty(xt, yt)
-                        temp = copy.deepcopy(self)
-                        if temp.turn == 'w':
-                            assert temp.getPiece(xt, yt-1).piece_type == 'pawn'
-                            temp.clearSquare(xt, yt-1)
-                        else:
-                            assert temp.getPiece(xt, yt+1).piece_type == 'pawn'
-                            temp.clearSquare(xt, yt+1)
-                        temp.movePiece(xs, ys, xt, yt)
-                        # temp.printGrid()
-                        if not temp.isCheck():
-                            enp_move = (xt, yt)
+                        # assert isEmpty(xt, yt)
+                        # temp = copy.deepcopy(self)
+                        # assert temp.getPiece(xt, ys).piece_type == 'pawn'
+                        # temp.clearSquare(xt, ys)
+                        # temp.movePiece(xs, ys, xt, yt)
+                        # if not temp.isCheck():
+                        enp_move = (xt, yt)
                     elif not isEmpty(xt, yt) and self.grid[xt][yt].color != p.color:
                         viable.append((xt, yt))
 
@@ -361,38 +357,49 @@ class Board:
                 ret = ret.union(set(protected))
         return ret
 
-    def canCastle(self, ch):
-        color = 'w' if ch == ch.upper() else 'b'
+    def canCastle(self, flag):
+        if flag == 'O-O':
+            ch = 'K' if self.turn == 'w' else 'k'
+        elif flag == 'O-O-O':
+            ch = 'Q' if self.turn == 'w' else 'q'
+        else:
+            raise ValueError("Invalid method call: canCastle().")
+
         if not ch in self.castle:
             return False
+        if self.isCheck():
+            return False
+
         isEmpty = lambda x, y: self.grid[x][y] is None
         if ch == 'K':
             if not isEmpty(*square2xy('f1')) or \
             not isEmpty(*square2xy('g1')):
                 return False
-            if square2xy('f1') in self.protectedSquares(swapColor(color)) or \
-            square2xy('g1') in self.protectedSquares(swapColor(color)):
+            if square2xy('f1') in self.protectedSquares(swapColor(self.turn)) or \
+            square2xy('g1') in self.protectedSquares(swapColor(self.turn)):
                 return False
         if ch == 'k':
             if not isEmpty(*square2xy('f8')) or \
             not isEmpty(*square2xy('g8')):
                 return False
-            if square2xy('f8') in self.protectedSquares(swapColor(color)) or \
-            square2xy('g8') in self.protectedSquares(swapColor(color)):
+            if square2xy('f8') in self.protectedSquares(swapColor(self.turn)) or \
+            square2xy('g8') in self.protectedSquares(swapColor(self.turn)):
                 return False
         if ch == 'Q':
-            if not isEmpty(*square2xy('c1')) or \
+            if not isEmpty(*square2xy('b1')) or \
+            not isEmpty(*square2xy('c1')) or \
             not isEmpty(*square2xy('d1')):
                 return False
-            if square2xy('c1') in self.protectedSquares(swapColor(color)) or \
-            square2xy('d1') in self.protectedSquares(swapColor(color)):
+            if square2xy('c1') in self.protectedSquares(swapColor(self.turn)) or \
+            square2xy('d1') in self.protectedSquares(swapColor(self.turn)):
                 return False
         if ch == 'q':
-            if not isEmpty(*square2xy('c8')) or \
+            if not isEmpty(*square2xy('b8')) or \
+            not isEmpty(*square2xy('c8')) or \
             not isEmpty(*square2xy('d8')):
                 return False
-            if square2xy('c8') in self.protectedSquares(swapColor(color)) or \
-            square2xy('d8') in self.protectedSquares(swapColor(color)):
+            if square2xy('c8') in self.protectedSquares(swapColor(self.turn)) or \
+            square2xy('d8') in self.protectedSquares(swapColor(self.turn)):
                 return False
         return True
     
@@ -421,7 +428,7 @@ class Board:
         return is_capture
     
 
-    def makeMoveFromNotation(self, notation):
+    def makeMoveFromNotation(self, notation): #TODO: check ambiguity or use a1-b2 format
         pc, target_sq, spec, flag = parseMove(notation)
 
         # Castling
@@ -430,7 +437,7 @@ class Board:
                 ch = 'K' if self.turn == 'w' else 'k'
             elif flag == 'O-O-O':
                 ch = 'Q' if self.turn == 'w' else 'q'
-            if not self.canCastle(ch):
+            if not self.canCastle(flag):
                 raise ValueError(f"Illegal castle {flag}.")
             
             if ch == 'K':
@@ -449,12 +456,11 @@ class Board:
             if self.turn == 'w':
                 self.castle = self.castle.replace('K', '')
                 self.castle = self.castle.replace('Q', '')
-                print('white cannot castle')
             else:
                 self.castle = self.castle.replace('k', '')
                 self.castle = self.castle.replace('q', '')
-                print('black cannot castle')
 
+            self.enpassant = '-'
             return
             
         for p in self.pieces[self.turn][pc]:
@@ -466,27 +472,32 @@ class Board:
         xt, yt = square2xy(target_sq)
 
         # Set enpassant
+        #TODO: Logic: only LEGAL en-passant moves should update self.enpassant
         enp = self.enpassant
         self.enpassant = '-'
         if pc == 'pawn':
             if self.turn == 'w' and ys == 1 and yt == 3:
-                if xt-1 >= 0 and self.grid[xt-1][yt] is not None:
-                    p = self.grid[xt-1][yt]
-                    if p.piece_type == 'pawn' and p.color != self.turn:
-                        self.enpassant = xy2square(xt, yt-1)
-                if xt+1 < self.width and self.grid[xt+1][yt] is not None:
-                    p = self.grid[xt+1][yt]
-                    if p.piece_type == 'pawn' and p.color != self.turn:
-                        self.enpassant = xy2square(xt, yt-1)
+                for xp in [xt-1, xt+1]:
+                    if 0 <= xp < self.width and self.grid[xp][yt] is not None:
+                        p = self.grid[xp][yt]
+                        if p.piece_type == 'pawn' and p.color != self.turn:
+                            temp = copy.deepcopy(self)
+                            temp.clearSquare(xs, ys)
+                            temp.movePiece(p.x, p.y, xt, yt-1)
+                            temp.switchTurn()
+                            if not temp.isCheck():
+                                self.enpassant = xy2square(xt, yt-1)
             elif self.turn == 'b' and ys == 6 and yt == 4:
-                if xt-1 >= 0 and self.grid[xt-1][yt] is not None:
-                    p = self.grid[xt-1][yt]
-                    if p.piece_type == 'pawn' and p.color != self.turn:
-                        self.enpassant = xy2square(xt, yt+1)
-                if xt+1 < self.width and self.grid[xt+1][yt] is not None:
-                    p = self.grid[xt+1][yt]
-                    if p.piece_type == 'pawn' and p.color != self.turn:
-                        self.enpassant = xy2square(xt, yt+1)
+                for xp in [xt-1, xt+1]:
+                    if 0 <= xp < self.width and self.grid[xp][yt] is not None:
+                        p = self.grid[xp][yt]
+                        if p.piece_type == 'pawn' and p.color != self.turn:
+                            temp = copy.deepcopy(self)
+                            temp.clearSquare(xs, ys)
+                            temp.movePiece(p.x, p.y, xt, yt+1)
+                            temp.switchTurn()
+                            if not temp.isCheck():
+                                self.enpassant = xy2square(xt, yt+1)
 
         # Negate castle rights
         if (xs, ys) == square2xy('e1'):
@@ -505,7 +516,7 @@ class Board:
             self.castle = self.castle.replace('k', '')
 
         # En-passant
-        if enp == xy2square(xt, yt):
+        if enp == xy2square(xt, yt) and self.grid[xs][ys].piece_type == 'pawn':
             assert self.grid[xt][yt] is None
             if self.turn == 'w':
                 assert self.getPiece(xt, yt-1).piece_type == 'pawn'
@@ -568,17 +579,20 @@ class Board:
 
     def list_all_moves(self):
         ret = []
-        for key, pcs in self.pieces[self.turn].items(): #TODO: check not dealed with.
+        for key, pcs in self.pieces[self.turn].items():
             for p in pcs:
                 moves = self.legalMoves(p.x, p.y)
                 for move in moves:
-                    ret.append(piece2letter(p)+xy2square(*move))
+                    if p.piece_type == 'pawn' and \
+                    ((p.color == 'w' and p.y == self.height-1-1) or (p.color == 'b' and p.y == 1)):
+                        # promotion
+                        for promotion in ['Q', 'R', 'B', 'N']:
+                            ret.append(piece2letter(p).upper()+xy2square(p.x, p.y)+xy2square(*move)+'='+promotion)
+                    else:
+                        ret.append(piece2letter(p).upper()+xy2square(p.x, p.y)+xy2square(*move))
+        if self.canCastle('O-O'):
+            ret.append('O-O')
+        if self.canCastle('O-O-O'):
+            ret.append('O-O-O')
+
         return ret
-        
-if __name__ == '__main__':
-    board = Board(positionFEN="r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4")
-    # board = Board(positionFEN="8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1")
-    board.printGrid()
-    print(board.list_all_moves())
-    print(board.isCheckmate())
-    print(board.isStalemate())

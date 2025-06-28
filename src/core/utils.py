@@ -44,7 +44,7 @@ def parseMove(move: str):
 
     # Now move is in the format: piece + (specifier) + target square
 
-    p = move[0]
+    p = move[0].upper()
     if p == 'P':
         piece = 'pawn'
     if p == 'K':
