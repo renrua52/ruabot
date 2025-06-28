@@ -23,7 +23,7 @@ def piece2letter(p):
         ch = ch.upper()
     return ch
 
-def parseMove(move: str):
+def parseNotation(move: str):
     move = move.replace('x', '')
     if move[-1] == '+' or move[-1] == '#':
         move = move[:-1]

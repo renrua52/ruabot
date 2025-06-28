@@ -1,11 +1,11 @@
 from core.piece import instantiatePiece
-from core.utils import square2xy, xy2square, parseMove, meetSpecifier, piece2letter, swapColor
+from core.utils import square2xy, xy2square, parseNotation, meetSpecifier, piece2letter, swapColor
 
 import copy
 import re
 
 class Board:
-    def __init__(self, board_width=8, board_height=8, positionFEN=None):
+    def __init__(self, positionFEN=None, board_width=8, board_height=8, ):
         if positionFEN is None:
             positionFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         self.width = board_width
@@ -65,13 +65,35 @@ class Board:
         except Exception as e:
             print(f'Error: {e}')
 
-    def generateFEN(self): # Untested
-        raise NotImplementedError
-    
-
+    def generateFEN(self): # Haven't been immensely tested.
+        retFEN = ""
+        for i in range(self.height):
+            empty = 0
+            for j in range(self.width):
+                x, y = j, self.height-i-1
+                if self.grid[x][y] == None:
+                    empty += 1
+                else:
+                    if empty:
+                        retFEN += str(empty)
+                        empty = 0
+                    retFEN += piece2letter(self.grid[x][y])
+            if empty:
+                retFEN += str(empty)
+            if i < self.height-1:
+                retFEN += "/"
+        
+        retFEN += " " + self.turn
+        retFEN += " " + self.castle
+        retFEN += " " + self.enpassant
+        retFEN += " " + str(self.fifty_count)
+        retFEN += " " + str(self.move_count)
+        
+        return retFEN
     
     def getPiece(self, x, y):
         return self.grid[x][y]
+    
     def getPieceFromSquare(self, square):
         x, y = square2xy(square)
         return self.getPiece(x, y)
@@ -232,7 +254,6 @@ class Board:
             moves.append(enp_move)
 
         return moves
-
 
     def protectingSquares(self, xs, ys):
         p = self.getPiece(xs, ys)
@@ -428,8 +449,8 @@ class Board:
         return is_capture
     
 
-    def makeMoveFromNotation(self, notation): #TODO: check ambiguity or use a1-b2 format
-        pc, target_sq, spec, flag = parseMove(notation)
+    def makeMoveFromNotation(self, notation): #TODO: also support a1-b2 format
+        pc, target_sq, spec, flag = parseNotation(notation)
 
         # Castling
         if flag in ['O-O', 'O-O-O']:
@@ -462,17 +483,22 @@ class Board:
 
             self.enpassant = '-'
             return
+        
+        candidate_pieces = []
             
         for p in self.pieces[self.turn][pc]:
             if meetSpecifier(p.x, p.y, spec) and square2xy(target_sq) in self.legalMoves(p.x, p.y):
-                xs, ys = p.x, p.y
-                break
-        else:
+                candidate_pieces.append(p)
+
+        if len(candidate_pieces) == 0:
             raise ValueError(f"Illegal move: {notation}")
+        if len(candidate_pieces) > 1:
+            raise ValueError(f"Ambiguous move: {notation}")
+
+        xs, ys = candidate_pieces[0].x, candidate_pieces[0].y
         xt, yt = square2xy(target_sq)
 
         # Set enpassant
-        #TODO: Logic: only LEGAL en-passant moves should update self.enpassant
         enp = self.enpassant
         self.enpassant = '-'
         if pc == 'pawn':
@@ -545,12 +571,10 @@ class Board:
         return False
         
     def isCheckmate(self):
-        king = list(self.pieces[self.turn]['king'])[0]
-        return self.isCheck() and len(self.list_all_moves()) == 0
+        return self.isCheck() and len(self.allLegalMoves()) == 0
     
     def isStalemate(self):
-        king = list(self.pieces[self.turn]['king'])[0]
-        return not self.isCheck() and len(self.list_all_moves()) == 0
+        return not self.isCheck() and len(self.allLegalMoves()) == 0
     
     def switchTurn(self):
         self.turn = swapColor(self.turn)
@@ -577,7 +601,7 @@ class Board:
             for p in pcs:
                 print(key, 'at', xy2square(p.x, p.y))
 
-    def list_all_moves(self):
+    def allLegalMoves(self):
         ret = []
         for key, pcs in self.pieces[self.turn].items():
             for p in pcs:
@@ -596,3 +620,7 @@ class Board:
             ret.append('O-O-O')
 
         return ret
+
+    def playMove(self, move):
+        self.makeMoveFromNotation(move)
+        self.switchTurn()

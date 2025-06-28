@@ -6,11 +6,10 @@ class Game:
     def __init__(self, startingFEN=None):
         self.board = Board(positionFEN=startingFEN)
         self.game_history = []
-        self.metadata = {} #TODO
+        self.metadata = {} #TODO: read metadata from PGN
 
     def executeMove(self, notation):
-        self.board.makeMoveFromNotation(notation)
-        self.board.switchTurn()
+        self.board.playMove(notation)
     
     def loadPGN(self, gamePGN):
         gamePGN = re.sub(r'\[.*?\]', '', gamePGN)
