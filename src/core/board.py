@@ -428,7 +428,7 @@ class Board:
     def movePiece(self, xs, ys, xt, yt):
         '''
         Brings the piece at (xs, ys) to (xt, yt), eliminating the one in target square. \\
-        **Return**: 0 for no capture, 1 for capture.
+        **Return**: False for no capture, True for capture.
         '''
         if self.grid[xs][ys] is None:
             raise ValueError("Illegal call: empty start square.")
@@ -436,9 +436,9 @@ class Board:
         if self.grid[xt][yt] is not None and self.grid[xt][yt].piece_type == 'king':
             raise ValueError("Illegal move: king capture.")
 
-        is_capture = 0
+        is_capture = False
         if self.grid[xt][yt] is not None:
-            is_capture = 1
+            is_capture = True
             self.clearSquare(xt, yt)
         
         self.grid[xt][yt] = self.grid[xs][ys]
@@ -482,7 +482,7 @@ class Board:
                 self.castle = self.castle.replace('q', '')
 
             self.enpassant = '-'
-            return
+            return False
         
         candidate_pieces = []
             
@@ -550,8 +550,10 @@ class Board:
             else:
                 assert self.getPiece(xt, yt+1).piece_type == 'pawn'
                 self.clearSquare(xt, yt+1)
+            self.movePiece(xs, ys, xt, yt)
+            return True
 
-        self.movePiece(xs, ys, xt, yt)
+        ret = self.movePiece(xs, ys, xt, yt)
 
         # Promotion
         if flag is not None:
@@ -563,6 +565,8 @@ class Board:
                 self.pieces['w'][pr.piece_type].add(pr)
             if pr.color == 'b':
                 self.pieces['b'][pr.piece_type].add(pr)
+        
+        return ret
     
     def isCheck(self):
         king = list(self.pieces[self.turn]['king'])[0]
@@ -579,27 +583,29 @@ class Board:
     def switchTurn(self):
         self.turn = swapColor(self.turn)
     
-    def printGrid(self):
+    def getGrid(self):
+        ret = ""
         for i in range(self.height):
             for j in range(self.width):
                 x = j
                 y = self.height-i-1
                 if self.grid[x][y] is None:
-                    print('*', end=' ')
+                    ret += '* '
+                    # print('*', end=' ')
                 else:
-                    ch = piece2letter(self.grid[x][y])
-                    print(ch, end=' ')
-            print()
+                    ret += piece2letter(self.grid[x][y]) + ' '
+            ret += "\n"
+        return ret
     
-    def printPieces(self):
-        print('===== White Pieces =====')
-        for key, pcs in self.pieces['w'].items(): 
-            for p in pcs:
-                print(key, 'at', xy2square(p.x, p.y))
-        print('===== Black Pieces =====')
-        for key, pcs in self.pieces['b'].items(): 
-            for p in pcs:
-                print(key, 'at', xy2square(p.x, p.y))
+    # def printPieces(self):
+    #     print('===== White Pieces =====')
+    #     for key, pcs in self.pieces['w'].items(): 
+    #         for p in pcs:
+    #             print(key, 'at', xy2square(p.x, p.y))
+    #     print('===== Black Pieces =====')
+    #     for key, pcs in self.pieces['b'].items(): 
+    #         for p in pcs:
+    #             print(key, 'at', xy2square(p.x, p.y))
 
     def allLegalMoves(self):
         ret = []

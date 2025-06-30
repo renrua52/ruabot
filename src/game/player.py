@@ -5,20 +5,25 @@ class Player:
     def generateMove(self, position):
         raise NotImplementedError
 
-class DummyBot(Player):
-    def __init__(self):
-        super().__init__('Dummy Bot')
-    
-    def generateMove(self, position):
-        available = position.allLegalMoves()
-        from random import choice
-        return choice(available)
-
 class HumanPlayer(Player):
     def __init__(self):
         super().__init__(input("Human Player Name: "))
     
     def generateMove(self, position):
         print("Your turn. Current Position:")
-        position.printGrid()
+        print(position.getGrid())
         return input("Your move: ")
+
+    
+class PlayerEnsemble(Player):
+    def __init__(self, player_list):
+        self.player_list = player_list
+        name = 'Ensemble: '
+        for player in player_list:
+            name += player.player_name + '+'
+        super().__init__(name)
+
+    def generateMove(self, position):
+        from random import choice
+        player = choice(self.player_list)
+        return player.generateMove(position)
