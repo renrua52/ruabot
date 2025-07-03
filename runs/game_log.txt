@@ -1,6 +1,0 @@
-White Player: Dummy Bot
-Black Player: Gourmand
-Game 1 Started
-1. Pg2g4 Pf7f6 2. Pf2f4 Pg7g5 3. Bf1h3 Pg5f4 4. Pg4g5 Pf6g5 5. Pd2d4 Pe7e5 6. Pd4d5 Pc7c5 7. Qd1d2 Pb7b5 8. Qd2b4 Pc5b4 9. Pd5d6 Bf8d6 10. Bc1d2 Ke8f8 11. Bd2c1 Qd8e7 12. Bc1f4 Pe5f4 13. Pc2c4 Pb5c4 14. Pe2e4 Pf4e3 15. Bh3f1 Bd6h2 16. Pa2a4 Bh2g1 17. Pb2b3 Pc4b3 18. Nb1a3 Pb4a3 19. Ke1e2 Qe7g7 20. Rh1h4 Pg5h4 21. Bf1h3 Qg7a1 22. Bh3g2 Ng8f6 23. Ke2f3 Kf8e8 24. Kf3f4 Nf6h5 25. Kf4f5 Qa1f6 26. Kf5g4 Ke8f8 27. Bg2b7 Bc8b7 28. Kg4h5 Pa7a6 29. Pa4a5 Qf6f2 30. Kh5g4 Pb3b2 31. Kg4g5 Pe3e2 32. Kg5h6 Bb7h1 33. Kh6g5 Pb2b1=Q 34. Kg5g4 Kf8e8 35. Kg4h3 Ph7h5 
-Game 1 score:-42
-Final scoreline: -42
