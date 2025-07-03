@@ -18,7 +18,7 @@ if __name__ == '__main__':
     scoreline = 0
     f.write(f'White Player: {w.player_name}\n')
     f.write(f'Black Player: {b.player_name}\n')
-    for i in range(10):
+    for i in range(1):
         f.write(f'Game {i+1} Started\n')
         ig = WeakBotGame(w, b)
         score = ig.startInteractiveGame(100)
