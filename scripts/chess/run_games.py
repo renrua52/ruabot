@@ -10,7 +10,7 @@ if __name__ == '__main__':
     # w = toy_bots.DummyBot()
     w = toy_bots.DummyBot()
     b = toy_bots.Gourmand()
-    f = open("scripts/chess/runs/game_log.txt", "w")
+    f = open("runs/game_log.txt", "w")
     scoreline = 0
     f.write(f'White Player: {w.player_name}\n')
     f.write(f'Black Player: {b.player_name}\n')
