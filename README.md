@@ -1,4 +1,4 @@
-# Ruabot-chess
+# ruabot
 An chess/reversi/... simulator &amp; bot developed for entertainment.
 
 The repository name comes from:
