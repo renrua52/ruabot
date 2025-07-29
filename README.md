@@ -1,5 +1,5 @@
 # Ruabot-chess
-An 'ajedrez' simulator &amp; bot developed as my personal coding practice.
+An chess/reversi/... simulator &amp; bot developed for entertainment.
 
 The repository name comes from:
 - My name 'renrua52';
