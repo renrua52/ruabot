@@ -5,7 +5,7 @@ import time
 
 
 
-from game.player import Player
+from chess.game.player import Player
 
 class LLMBot(Player):
     def __init__(self, model_name):

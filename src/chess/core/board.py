@@ -1,5 +1,5 @@
-from core.piece import instantiatePiece
-from core.utils import square2xy, xy2square, parseNotation, meetSpecifier, piece2letter, swapColor
+from chess.core.piece import instantiatePiece
+from chess.core.utils import square2xy, xy2square, parseNotation, meetSpecifier, piece2letter, swapColor
 
 import copy
 import re

@@ -1,5 +1,5 @@
-from core.board import Board
-from game.move import Move, FullMove
+from chess.core.board import Board
+from chess.game.move import Move, FullMove
 import copy
 import re
 

@@ -1,11 +1,7 @@
 import sys
 import os
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.abspath(os.path.join(current_dir, '..', 'src'))
-sys.path.append(src_dir)
-
-from game.game import Game
+from chess.game.game import Game
 
 
 gamePGN = """[Event "casual bullet game"]

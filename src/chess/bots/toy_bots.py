@@ -1,4 +1,4 @@
-from game.player import Player
+from chess.game.player import Player
 from random import choice
 
 class DummyBot(Player): # Randomly selects a legal move
