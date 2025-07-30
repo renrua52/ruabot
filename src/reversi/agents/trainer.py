@@ -34,27 +34,25 @@ class Trainer:
                 if move == (-1, -1):
                     board.makeEmptyMove()
                 else:
-                    board.makeMove(**move)
+                    board.makeMove(move[0], move[1])
             
             result = board.getResult()
             
-            discounted_rewards = []
-            for i, player in enumerate(move_players):
+            # Assign rewards based on final game result for each player
+            rewards = []
+            for player in move_players:
                 if result == player:
-                    game_reward = 1.0
+                    reward = 1.0
                 elif result == 0:
-                    game_reward = 0.0
+                    reward = 0.0
                 else:
-                    game_reward = -1.0
-                
-                discounted_reward = game_reward * (self.gamma ** (len(log_probabilities) - i - 1))
-                discounted_rewards.append(discounted_reward)
+                    reward = -1.0
+                rewards.append(reward)
             
-            rewards = torch.tensor(discounted_rewards, dtype=torch.float32)
+            rewards = torch.tensor(rewards, dtype=torch.float32)
             
-
             self.agent.policy_network.train()
             self.update_policy(log_probabilities, rewards)
             
             if episode % 100 == 0:
-                print(f"Episode {episode}, Result: {final_result}")
+                print(f"Episode {episode}, Result: {result}")

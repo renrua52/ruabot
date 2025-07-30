@@ -12,11 +12,11 @@ class Board:
             raise Exception("Invalid configstr.")
         if not (1 <= self.height <= 100 and 1 <= self.width <= 100):
             raise Exception("Invalid board size.")
-        if self.steps <= 0 or not (0 <= self.emptyMoves <= 2) or len(splitted[4]) != self.height * self.width:
+        if self.steps < 0 or not (0 <= self.emptyMoves <= 2) or len(splitted[4]) != self.height * self.width:
             raise Exception("Invalid configstr.")
         self.bScore = 0
         self.wScore = 0
-        self.grid = [[0] * self.width] * self.height
+        self.grid = [[0] * self.width for _ in range(self.height)]
         for i in range(self.height):
             for j in range(self.width):
                 c = splitted[4][i * self.width + j]
