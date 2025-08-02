@@ -87,9 +87,6 @@ class Board:
         return ret
 
     def makeMove(self, x: int, y: int):
-        # if x == -1 and y == -1:
-        #     self.makeEmptyMove()
-        #     return
         if self.getResult() >= 0:
             raise Exception("Game is over.")
         if not self.validCoordinates(x, y):

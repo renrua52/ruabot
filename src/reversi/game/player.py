@@ -27,8 +27,8 @@ class DummyPlayer(Player):
 class PolicyPlayer(Player):
     def __init__(self, config, weight_path=None):
         super().__init__("policy")
-        from reversi.agents.pg.agent import AgentPG
-        self.agent = AgentPG(config)
+        from reversi.agents.pg.agent import PGAgent
+        self.agent = PGAgent(config)
         if weight_path:
             self.agent.load_weights(weight_path)
 

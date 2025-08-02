@@ -1,9 +1,10 @@
 import torch
 from reversi.agents.pg.policy import PolicyNetwork
-from reversi.core.utils import getModelInput
+from reversi.agents.pg.utils import getModelInput
 
-class AgentPG:
+class PGAgent:
     def __init__(self, config):
+        self.config = config
         self.width = config["width"]
         self.height = config["height"]
         self.policy_network = PolicyNetwork(config["width"], config["height"])
@@ -11,19 +12,23 @@ class AgentPG:
         self.i2p = lambda i : (i // self.width, i % self.width)
 
     def load_weights(self, path):
-        self.policy_network.load_state_dict(path)
+        self.policy_network.load_state_dict(torch.load(path))
 
     def selectAction(self, state):
         model_input = getModelInput(state)
 
-        self.policy_network.eval()
+        legal_moves = state.getAllLegalMoves()
+        if len(legal_moves) == 0:
+            return (-1, -1), None
+
+        self.policy_network.train()
         logits = self.policy_network(model_input)
 
-        legal_moves = state.getAllLegalMoves()
-        for i in range(logits.size(1)):
+        masked_logits = logits.clone()
+        for i in range(masked_logits.size(1)):
             if not self.i2p(i) in legal_moves:
-                logits[0, i] = -float('inf')
-        probabilities = torch.softmax(logits, dim=1)
+                masked_logits[0, i] = -float('inf')
+        probabilities = torch.softmax(masked_logits, dim=1)
         distribution = torch.distributions.Categorical(probabilities)
         action = distribution.sample()
         move = self.i2p(action.item())

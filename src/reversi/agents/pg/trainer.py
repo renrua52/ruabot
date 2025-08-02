@@ -1,5 +1,6 @@
 import torch
 import torch.optim as optim
+import os
 from reversi.core.board import Board
 
 class Trainer:
@@ -8,48 +9,85 @@ class Trainer:
         self.optimizer = optim.Adam(agent.policy_network.parameters(), lr=learning_rate)
         self.gamma = gamma
 
-    def update_policy(self, log_probabilities, rewards):
+    def compute_loss(self, log_probabilities, rewards):
         policy_loss = []
         for log_prob, reward in zip(log_probabilities, rewards):
             policy_loss.append(-log_prob * reward)
         policy_loss = torch.cat(policy_loss).sum()
+        return policy_loss
 
+    def update_policy(self, total_loss):
         self.optimizer.zero_grad()
-        policy_loss.backward()
+        total_loss.backward()
         self.optimizer.step()
 
     def run(self, num_episodes):
         for episode in range(num_episodes):
-            board = Board()
-            log_probabilities = []
-            move_players = []
+            board = Board(self.agent.config)
+            log_probs = {
+                1: [],
+                2: []
+            }
+            rewards = {
+                1: [],
+                2: []
+            }
             
             while board.getResult() == -1:
-                current_player = board.getTurn()
-                
                 move, log_prob = self.agent.selectAction(board)
-                log_probabilities.append(log_prob)
-                move_players.append(current_player)
-                
+                if move == (-1, -1):
+                    board.makeEmptyMove()
+                    continue
                 board.makeMove(move[0], move[1])
+                current_player = board.getTurn()
+                log_probs[current_player].append(log_prob)
+                rewards[current_player].append(0)
             
             result = board.getResult()
             
-            # Assign rewards based on final game result for each player
-            rewards = []
-            for player in move_players:
-                if result == player:
-                    reward = 1.0
-                elif result == 0:
-                    reward = 0.0
-                else:
-                    reward = -1.0
-                rewards.append(reward)
+            total_loss = None
             
-            rewards = torch.tensor(rewards, dtype=torch.float32)
+            for player in [1, 2]:
+                if rewards[player]:
+                    if result == player:
+                        final_reward = 1.0
+                    elif result == 0:
+                        final_reward = 0.0
+                    else:
+                        final_reward = -1.0
+                    
+                    rewards[player][-1] = final_reward
+                    
+                    discounted_rewards = []
+                    cumulative_reward = 0.0
+                    for reward in reversed(rewards[player]):
+                        cumulative_reward = cumulative_reward * self.gamma + reward
+                        discounted_rewards.append(cumulative_reward)
+                    discounted_rewards = list(reversed(discounted_rewards))
+                    discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float32)
+                    
+                    if len(discounted_rewards) > 1:
+                        discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-9)
+                    
+                    player_loss = self.compute_loss(log_probs[player], discounted_rewards)
+                    
+                    if total_loss is None:
+                        total_loss = player_loss
+                    else:
+                        total_loss = total_loss + player_loss
             
-            self.agent.policy_network.train()
-            self.update_policy(log_probabilities, rewards)
+            if total_loss is not None:
+                self.update_policy(total_loss)
             
-            if episode % 100 == 0:
-                print(f"Episode {episode}, Result: {result}")
+            if (episode+1) % 100 == 0:
+                print(f"Episode {episode+1}")
+        
+        self.save_model()
+
+    def save_model(self):
+        save_dir = "runs/pg"
+        os.makedirs(save_dir, exist_ok=True)
+        
+        model_path = os.path.join(save_dir, "policy_network.pth")
+        torch.save(self.agent.policy_network.state_dict(), model_path)
+        print(f"Model saved to {model_path}")
