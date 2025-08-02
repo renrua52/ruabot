@@ -4,10 +4,11 @@ import os
 from reversi.core.board import Board
 
 class Trainer:
-    def __init__(self, agent, learning_rate=0.001, gamma=0.99):
+    def __init__(self, agent, learning_rate=0.0005, gamma=0.99, piece_gain_weight=0.2):
         self.agent = agent
         self.optimizer = optim.Adam(agent.policy_network.parameters(), lr=learning_rate)
         self.gamma = gamma
+        self.piece_gain_weight = piece_gain_weight
 
     def compute_loss(self, log_probabilities, rewards):
         policy_loss = []
@@ -38,10 +39,21 @@ class Trainer:
                 if move == (-1, -1):
                     board.makeEmptyMove()
                     continue
-                board.makeMove(move[0], move[1])
+
                 current_player = board.getTurn()
+                b, w = board.getScores()
+                adv_before = b - w if current_player == 1 else w - b
+                
+                board.makeMove(move[0], move[1])
+
+                b, w = board.getScores()
+                adv_after = b - w if current_player == 1 else w - b
+
+                pieces_gained = adv_after - adv_before
+                immediate_reward = self.piece_gain_weight * pieces_gained * (self.agent.config["height"] * self.agent.config["width"]) ** -0.5
+                
                 log_probs[current_player].append(log_prob)
-                rewards[current_player].append(0)
+                rewards[current_player].append(immediate_reward)
             
             result = board.getResult()
             
@@ -67,7 +79,9 @@ class Trainer:
                     discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float32)
                     
                     if len(discounted_rewards) > 1:
-                        discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-9)
+                        reward_std = discounted_rewards.std()
+                        if reward_std > 1e-6:
+                            discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / reward_std
                     
                     player_loss = self.compute_loss(log_probs[player], discounted_rewards)
                     
@@ -78,9 +92,11 @@ class Trainer:
             
             if total_loss is not None:
                 self.update_policy(total_loss)
+
+            if (episode+1) % 100 == 0:
+                print(f"Episode {episode+1}")
             
             if (episode+1) % 1000 == 0:
-                print(f"Episode {episode+1}")
                 self.save_model(episode+1)
 
     def save_model(self, ckpt):

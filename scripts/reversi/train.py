@@ -3,7 +3,7 @@ from reversi.agents.pg.trainer import Trainer
 from reversi.game.utils import getDefaultConfig
 
 if __name__ == '__main__':
-    config = getDefaultConfig(6)
-    agent = PGAgent(config)
+    config = getDefaultConfig(8)
+    agent = PGAgent(config, True)
     trainer = Trainer(agent)
-    trainer.run(500)
+    trainer.run(10000)
