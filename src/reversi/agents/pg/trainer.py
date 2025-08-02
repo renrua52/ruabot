@@ -79,15 +79,14 @@ class Trainer:
             if total_loss is not None:
                 self.update_policy(total_loss)
             
-            if (episode+1) % 100 == 0:
+            if (episode+1) % 1000 == 0:
                 print(f"Episode {episode+1}")
-        
-        self.save_model()
+                self.save_model(episode+1)
 
-    def save_model(self):
+    def save_model(self, ckpt):
         save_dir = "runs/pg"
         os.makedirs(save_dir, exist_ok=True)
         
-        model_path = os.path.join(save_dir, "policy_network.pth")
+        model_path = os.path.join(save_dir, f"policy_network_ckpt_{ckpt}.pth")
         torch.save(self.agent.policy_network.state_dict(), model_path)
         print(f"Model saved to {model_path}")
