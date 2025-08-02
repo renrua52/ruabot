@@ -31,10 +31,7 @@ class Trainer:
                 log_probabilities.append(log_prob)
                 move_players.append(current_player)
                 
-                if move == (-1, -1):
-                    board.makeEmptyMove()
-                else:
-                    board.makeMove(move[0], move[1])
+                board.makeMove(move[0], move[1])
             
             result = board.getResult()
             

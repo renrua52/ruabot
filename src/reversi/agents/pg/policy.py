@@ -12,7 +12,7 @@ class PolicyNetwork(nn.Module):
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
         self.fc1 = nn.Linear(height * width * 64, 128)
-        self.fc2 = nn.Linear(128, height * width + 1) # +1 for empty move
+        self.fc2 = nn.Linear(128, height * width) # +1 for empty move
 
     def forward(self, x):
         x = torch.relu(self.conv1(x))

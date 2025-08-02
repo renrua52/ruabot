@@ -1,25 +1,35 @@
 class Board:
-    def __init__(self, configstr: str = "8/8/0/0/0000000000000000000000000002100000012000000000000000000000000000"):
-        splitted = configstr.split("/")
-        if len(splitted) != 5:
+    def __init__(self, config: dict, configstr: str = None):
+        default_config = {
+            (4, 4): "0000021001200000 0 0",
+            (6, 6): "000000000000002100001200000000000000 0 0",
+            (8, 8): "0000000000000000000000000002100000012000000000000000000000000000 0 0"
+        }
+        if configstr is None:
+            board_shape = (config["height"], config["width"])
+            assert board_shape in default_config
+            configstr = default_config[board_shape]
+
+        splitted = configstr.split()
+        if len(splitted) != 3:
             raise Exception("Invalid configstr.")
         try:
-            self.height = int(splitted[0])
-            self.width = int(splitted[1])
-            self.steps = int(splitted[2])
-            self.emptyMoves = int(splitted[3])
+            self.height = config["height"]
+            self.width = config["width"]
+            self.steps = int(splitted[1])
+            self.emptyMoves = int(splitted[2])
         except ValueError:
             raise Exception("Invalid configstr.")
         if not (1 <= self.height <= 100 and 1 <= self.width <= 100):
             raise Exception("Invalid board size.")
-        if self.steps < 0 or not (0 <= self.emptyMoves <= 2) or len(splitted[4]) != self.height * self.width:
+        if self.steps < 0 or not (0 <= self.emptyMoves <= 2) or len(splitted[0]) != self.height * self.width:
             raise Exception("Invalid configstr.")
         self.bScore = 0
         self.wScore = 0
         self.grid = [[0] * self.width for _ in range(self.height)]
         for i in range(self.height):
             for j in range(self.width):
-                c = splitted[4][i * self.width + j]
+                c = splitted[0][i * self.width + j]
                 if c == "1":
                     self.bScore += 1
                     self.grid[i][j] = 1
@@ -77,9 +87,9 @@ class Board:
         return ret
 
     def makeMove(self, x: int, y: int):
-        if x == -1 and y == -1:
-            self.makeEmptyMove()
-            return
+        # if x == -1 and y == -1:
+        #     self.makeEmptyMove()
+        #     return
         if self.getResult() >= 0:
             raise Exception("Game is over.")
         if not self.validCoordinates(x, y):
@@ -159,3 +169,10 @@ class Board:
         if b > w:
             return 1
         return 2
+    
+    def printGrid(self):
+        for i in range(self.height):
+            for j in range(self.width):
+                print(self.grid[i][j], end='')
+                pass
+            print()
