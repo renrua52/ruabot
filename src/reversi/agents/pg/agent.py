@@ -3,13 +3,14 @@ from reversi.agents.pg.policy import PolicyNetwork
 from reversi.agents.pg.utils import getModelInput
 
 class PGAgent:
-    def __init__(self, config, training):
+    def __init__(self, config, training=False):
         self.config = config
         self.width = config["width"]
         self.height = config["height"]
         self.policy_network = PolicyNetwork(config["width"], config["height"])
         self.p2i = lambda p : p[0] * self.width + p[1]
         self.i2p = lambda i : (i // self.width, i % self.width)
+        self.training = training
         if training:
             self.policy_network.train()
         else:
@@ -19,7 +20,7 @@ class PGAgent:
         self.policy_network.load_state_dict(torch.load(path))
 
     def selectAction(self, state):
-        model_input = getModelInput(state)
+        model_input = getModelInput(state, self.device)
 
         legal_moves = state.getAllLegalMoves()
         if len(legal_moves) == 0:

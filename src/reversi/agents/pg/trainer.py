@@ -4,8 +4,13 @@ import os
 from reversi.core.board import Board
 
 class Trainer:
-    def __init__(self, agent, learning_rate=0.0005, gamma=0.99, piece_gain_weight=0.2):
+    def __init__(self, agent, learning_rate=0.0001, gamma=0.99, piece_gain_weight=1):
         self.agent = agent
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"Using device: {self.device}")
+        
+        self.agent.policy_network.to(self.device)
+        
         self.optimizer = optim.Adam(agent.policy_network.parameters(), lr=learning_rate)
         self.gamma = gamma
         self.piece_gain_weight = piece_gain_weight
@@ -76,7 +81,7 @@ class Trainer:
                         cumulative_reward = cumulative_reward * self.gamma + reward
                         discounted_rewards.append(cumulative_reward)
                     discounted_rewards = list(reversed(discounted_rewards))
-                    discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float32)
+                    discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float32, device=self.device)
                     
                     if len(discounted_rewards) > 1:
                         reward_std = discounted_rewards.std()
