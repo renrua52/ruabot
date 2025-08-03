@@ -1,16 +1,25 @@
 import torch
 import torch.optim as optim
 import os
+import random
 from reversi.core.board import Board
+from reversi.agents.pg.agent import PGAgent
 
 class Trainer:
-    def __init__(self, agent, learning_rate=0.0001, gamma=0.99, piece_gain_weight=1):
+    def __init__(self, agent, learning_rate=1e-4, gamma=0.99, gain_weight=0.05, border_weight=0.02, max_opponents=8):
         self.agent = agent
         self.device = self.agent.device
         
         self.optimizer = optim.Adam(agent.policy_network.parameters(), lr=learning_rate)
         self.gamma = gamma
-        self.piece_gain_weight = piece_gain_weight
+        self.gain_weight = gain_weight
+        self.border_weight = border_weight
+        
+        self.max_opponents = max_opponents
+        self.opponent_pool = []
+        self.opponent_weights = []
+        
+        self.use_random_opponent_prob = 0.3
 
     def compute_loss(self, log_probabilities, rewards):
         policy_loss = []
@@ -24,6 +33,35 @@ class Trainer:
         total_loss.backward()
         self.optimizer.step()
 
+    def add_opponent_to_pool(self):
+        current_weights = {k: v.cpu().clone() for k, v in self.agent.policy_network.state_dict().items()}
+        self.opponent_weights.append(current_weights)
+        
+        opponent = PGAgent(self.agent.config, training=False)
+        opponent.policy_network.load_state_dict(current_weights)
+        self.opponent_pool.append(opponent)
+        
+        if len(self.opponent_pool) > self.max_opponents:
+            self.opponent_pool.pop(0)
+            self.opponent_weights.pop(0)
+        
+        print(f"Added opponent to pool. Pool size: {len(self.opponent_pool)}")
+
+    def get_random_opponent(self):
+        if random.random() < self.use_random_opponent_prob:
+            return "random"
+        elif not self.opponent_pool:
+            return None
+        else:
+            return random.choice(self.opponent_pool)
+
+    def make_random_move(self, board):
+        legal_moves = board.getAllLegalMoves()
+        if not legal_moves:
+            return (-1, -1), None
+        move = random.choice(legal_moves)
+        return move, None
+
     def run(self, num_episodes):
         for episode in range(num_episodes):
             board = Board(self.agent.config)
@@ -36,13 +74,25 @@ class Trainer:
                 2: []
             }
             
+            training_player = random.choice([1, 2])
+            opponent = self.get_random_opponent()
+            
             while board.getResult() == -1:
-                move, log_prob = self.agent.selectAction(board)
+                current_player = board.getTurn()
+                
+                if current_player == training_player:
+                    move, log_prob = self.agent.selectAction(board)
+                elif opponent == "random":
+                    move, log_prob = self.make_random_move(board)
+                elif opponent is not None:
+                    move, log_prob = opponent.selectAction(board)
+                else:
+                    move, log_prob = self.agent.selectAction(board)
+                
                 if move == (-1, -1):
                     board.makeEmptyMove()
                     continue
 
-                current_player = board.getTurn()
                 b, w = board.getScores()
                 adv_before = b - w if current_player == 1 else w - b
                 
@@ -51,8 +101,12 @@ class Trainer:
                 b, w = board.getScores()
                 adv_after = b - w if current_player == 1 else w - b
 
-                pieces_gained = adv_after - adv_before
-                immediate_reward = self.piece_gain_weight * pieces_gained * (self.agent.config["height"] * self.agent.config["width"]) ** -0.5
+                gain = adv_after - adv_before
+                gain_reward = self.gain_weight * gain * (self.agent.config["height"] * self.agent.config["width"]) ** -0.5
+
+                border_reward = float(int(move[0] == 0) + int(move[0] == self.agent.config["height"]-1) + int(move[1] == 0) + int(move[1] == self.agent.config["width"]-1)) * self.border_weight
+
+                immediate_reward = gain_reward + border_reward
                 
                 log_probs[current_player].append(log_prob)
                 rewards[current_player].append(immediate_reward)
@@ -60,43 +114,39 @@ class Trainer:
             result = board.getResult()
             
             total_loss = None
-            
-            for player in [1, 2]:
-                if rewards[player]:
-                    if result == player:
-                        final_reward = 1.0
-                    elif result == 0:
-                        final_reward = 0.0
-                    else:
-                        final_reward = -1.0
-                    
-                    rewards[player][-1] = final_reward
-                    
-                    discounted_rewards = []
-                    cumulative_reward = 0.0
-                    for reward in reversed(rewards[player]):
-                        cumulative_reward = cumulative_reward * self.gamma + reward
-                        discounted_rewards.append(cumulative_reward)
-                    discounted_rewards = list(reversed(discounted_rewards))
-                    discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float32, device=self.device)
-                    
-                    if len(discounted_rewards) > 1:
-                        reward_std = discounted_rewards.std()
-                        if reward_std > 1e-6:
-                            discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / reward_std
-                    
-                    player_loss = self.compute_loss(log_probs[player], discounted_rewards)
-                    
-                    if total_loss is None:
-                        total_loss = player_loss
-                    else:
-                        total_loss = total_loss + player_loss
+            if rewards[training_player]:
+                if result == training_player:
+                    final_reward = 1.0
+                elif result == 0:
+                    final_reward = 0.0
+                else:
+                    final_reward = -1.0
+                
+                rewards[training_player][-1] = final_reward
+                
+                discounted_rewards = []
+                cumulative_reward = 0.0
+                for reward in reversed(rewards[training_player]):
+                    cumulative_reward = cumulative_reward * self.gamma + reward
+                    discounted_rewards.append(cumulative_reward)
+                discounted_rewards = list(reversed(discounted_rewards))
+                discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float32, device=self.device)
+                
+                if len(discounted_rewards) > 1:
+                    reward_std = discounted_rewards.std()
+                    if reward_std > 1e-6:
+                        discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / reward_std
+                
+                total_loss = self.compute_loss(log_probs[training_player], discounted_rewards)
             
             if total_loss is not None:
                 self.update_policy(total_loss)
 
             if (episode+1) % 100 == 0:
-                print(f"Episode {episode+1}")
+                print(f"Episode {episode+1}/{num_episodes}")
+            
+            if (episode+1) % 500 == 0:
+                self.add_opponent_to_pool()
             
             if (episode+1) % 1000 == 0:
                 self.save_model(episode+1)
