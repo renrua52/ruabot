@@ -48,9 +48,6 @@ class ReversiGUI:
         clock = pygame.time.Clock()
         
         while running:
-            if self.board.getResult() != -1:
-                continue
-            
             events = pygame.event.get()
             for event in events:
                 if event.type == pygame.QUIT:

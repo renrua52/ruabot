@@ -6,7 +6,15 @@ from reversi.core.board import Board
 from reversi.agents.pg.agent import PGAgent
 
 class Trainer:
-    def __init__(self, agent, learning_rate=1e-4, gamma=0.99, gain_weight=0.05, border_weight=0.02, max_opponents=8):
+    def __init__(
+            self,
+            agent: PGAgent,
+            learning_rate=1e-4,
+            gamma=0.99,
+            gain_weight=0.05,
+            border_weight=0.02,
+            max_opponents=8
+        ):
         self.agent = agent
         self.device = self.agent.device
         
@@ -81,13 +89,13 @@ class Trainer:
                 current_player = board.getTurn()
                 
                 if current_player == training_player:
-                    move, log_prob = self.agent.selectAction(board)
+                    move, log_prob = self.agent.selectAction(board, do_sample=True, top_k=5)
                 elif opponent == "random":
                     move, log_prob = self.make_random_move(board)
                 elif opponent is not None:
-                    move, log_prob = opponent.selectAction(board)
+                    move, log_prob = opponent.selectAction(board, do_sample=True, top_k=5)
                 else:
-                    move, log_prob = self.agent.selectAction(board)
+                    move, log_prob = self.agent.selectAction(board, do_sample=True, top_k=5)
                 
                 if move == (-1, -1):
                     board.makeEmptyMove()

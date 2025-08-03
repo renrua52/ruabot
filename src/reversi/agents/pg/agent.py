@@ -24,7 +24,7 @@ class PGAgent:
     def load_weights(self, path):
         self.policy_network.load_state_dict(torch.load(path))
 
-    def selectAction(self, state):
+    def selectAction(self, state, do_sample=False, top_k=None):
         model_input = getModelInput(state, self.device)
 
         legal_moves = state.getAllLegalMoves()
@@ -39,6 +39,21 @@ class PGAgent:
                 masked_logits[0, i] = -float('inf')
         probabilities = torch.softmax(masked_logits, dim=1)
         distribution = torch.distributions.Categorical(probabilities)
-        action = distribution.sample()
+        if do_sample:
+            if top_k is not None:
+                top_k_actual = min(top_k, len(legal_moves))
+                top_probs, top_indices = torch.topk(probabilities, top_k_actual, dim=1)
+                
+                filtered_probs = torch.zeros_like(probabilities)
+                filtered_probs.scatter_(1, top_indices, top_probs)
+                
+                filtered_probs = filtered_probs / filtered_probs.sum(dim=1, keepdim=True)
+                filtered_distribution = torch.distributions.Categorical(filtered_probs)
+                action = filtered_distribution.sample()
+            else:
+                action = distribution.sample()
+        else:
+            action = torch.argmax(probabilities, dim=1)
         move = self.i2p(action.item())
+
         return move, distribution.log_prob(action)

@@ -6,4 +6,4 @@ if __name__ == '__main__':
     config = getDefaultConfig(6)
     agent = PGAgent(config, training=True)
     trainer = Trainer(agent)
-    trainer.run(100000)
+    trainer.run(50000)

@@ -33,5 +33,5 @@ class PolicyPlayer(Player):
             self.agent.load_weights(weight_path)
 
     def generateMove(self, board):
-        move, _ = self.agent.selectAction(board)
+        move, _ = self.agent.selectAction(board, do_sample=False)
         return move
