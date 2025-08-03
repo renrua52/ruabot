@@ -6,10 +6,7 @@ from reversi.core.board import Board
 class Trainer:
     def __init__(self, agent, learning_rate=0.0001, gamma=0.99, piece_gain_weight=1):
         self.agent = agent
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"Using device: {self.device}")
-        
-        self.agent.policy_network.to(self.device)
+        self.device = self.agent.device
         
         self.optimizer = optim.Adam(agent.policy_network.parameters(), lr=learning_rate)
         self.gamma = gamma

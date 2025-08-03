@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     score = {0:0, 1:0, 2:0}
 
-    for game in range(100):
+    for game in range(500):
         print(f'Game {game+1} Started')
         if game % 2 == 0:
             g = GameExecutor(config, p1, p2, verbose=False)

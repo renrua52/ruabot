@@ -16,6 +16,11 @@ class PGAgent:
         else:
             self.policy_network.eval()
 
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"Using device: {self.device}")
+        
+        self.policy_network.to(self.device)
+
     def load_weights(self, path):
         self.policy_network.load_state_dict(torch.load(path))
 
