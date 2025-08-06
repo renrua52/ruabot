@@ -11,9 +11,9 @@ class Trainer:
             agent: PGAgent,
             learning_rate=1e-4,
             gamma=0.99,
-            gain_weight=0.05,
-            border_weight=0.02,
-            max_opponents=8
+            gain_weight=1,
+            border_weight=1,
+            max_opponents=5,
         ):
         self.agent = agent
         self.device = self.agent.device
@@ -27,7 +27,7 @@ class Trainer:
         self.opponent_pool = []
         self.opponent_weights = []
         
-        self.use_random_opponent_prob = 0.3
+        self.use_random_opponent_prob = 0.25
 
     def compute_loss(self, log_probabilities, rewards):
         policy_loss = []
@@ -110,9 +110,14 @@ class Trainer:
                 adv_after = b - w if current_player == 1 else w - b
 
                 gain = adv_after - adv_before
-                gain_reward = self.gain_weight * gain * (self.agent.config["height"] * self.agent.config["width"]) ** -0.5
-
-                border_reward = float(int(move[0] == 0) + int(move[0] == self.agent.config["height"]-1) + int(move[1] == 0) + int(move[1] == self.agent.config["width"]-1)) * self.border_weight
+                gain_reward = 0.05 * self.gain_weight * gain * (self.agent.config["height"] * self.agent.config["width"]) ** -0.5
+                
+                border_reward = 0.0
+                if (move[0] == 0 and move[1] == 0) or (move[0] == self.agent.config["height"]-1 and move[1] == self.agent.config["width"]-1):
+                    border_reward = 0.1
+                if ((move[0] == 0) ^ (move[1] == 0)) or ((move[0] == self.agent.config["height"]-1) ^ (move[1] == self.agent.config["width"]-1)):
+                    border_reward = 0.02
+                border_reward *= self.border_weight
 
                 immediate_reward = gain_reward + border_reward
                 
@@ -158,6 +163,7 @@ class Trainer:
             
             if (episode+1) % 1000 == 0:
                 self.save_model(episode+1)
+                self.test_dummy(episode+1)
 
     def save_model(self, ckpt):
         save_dir = "runs/pg"
@@ -166,3 +172,32 @@ class Trainer:
         model_path = os.path.join(save_dir, f"policy_network_ckpt_{ckpt}.pth")
         torch.save(self.agent.policy_network.state_dict(), model_path)
         print(f"Model saved to {model_path}")
+
+    def test_dummy(self, ckpt): # Bad implementation
+        from reversi.game.executor import GameExecutor
+        from reversi.game.player import DummyPlayer, PolicyPlayer
+        from reversi.game.utils import getDefaultConfig
+        config = getDefaultConfig(6)
+
+        p1 = PolicyPlayer(config, f"runs/pg/policy_network_ckpt_{ckpt}.pth")
+        p2 = DummyPlayer(config)
+
+        score = {0:0, 1:0, 2:0}
+
+        num_games = 400
+        for game in range(num_games):
+            if game % 2 == 0:
+                g = GameExecutor(config, p1, p2, verbose=False)
+                res = g.runGame()
+                score[res] += 1
+            else:
+                g = GameExecutor(config, p2, p1, verbose=False)
+                res = g.runGame()
+                if res != 0:
+                    res = 3-res
+                score[res] += 1
+
+        print(score)
+        print((score[1]+score[0]/2)/num_games)
+
+        
