@@ -177,7 +177,9 @@ class Trainer:
         from reversi.game.executor import GameExecutor
         from reversi.game.player import DummyPlayer, PolicyPlayer
         from reversi.game.utils import getDefaultConfig
-        config = getDefaultConfig(6)
+
+        assert self.agent.config["height"] == self.agent.config["width"]
+        config = getDefaultConfig(self.agent.config["height"])
 
         p1 = PolicyPlayer(config, f"runs/pg/policy_network_ckpt_{ckpt}.pth")
         p2 = DummyPlayer(config)

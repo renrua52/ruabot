@@ -17,7 +17,7 @@ class PGAgent:
             self.policy_network.eval()
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"Using device: {self.device}")
+        # print(f"Using device: {self.device}")
         
         self.policy_network.to(self.device)
 

@@ -24,6 +24,32 @@ class DummyPlayer(Player):
         from random import choice
         return choice(legal_moves)
     
+class GreedyPlayer(Player):
+    def __init__(self, config):
+        super().__init__("greedy")
+
+    def generateMove(self, board):
+        legal_moves = board.getAllLegalMoves()
+        best_moves = []
+        current_player = board.getTurn()
+
+        best = -10000
+
+        from copy import deepcopy
+        for move in legal_moves:
+            tmp = deepcopy(board)
+            tmp.makeMove(move[0], move[1])
+            b, w = tmp.getScores()
+            adv = b - w if current_player == 1 else w - b
+            if adv == best:
+                best_moves.append(move)
+            elif adv > best:
+                best_moves = []
+                best_moves.append(move)
+                best = adv
+        from random import choice
+        return choice(best_moves)
+    
 class PolicyPlayer(Player):
     def __init__(self, config, weight_path=None):
         super().__init__("policy")

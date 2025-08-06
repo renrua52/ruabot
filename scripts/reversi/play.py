@@ -1,11 +1,11 @@
 from reversi.game.executor import GameExecutor
-from reversi.game.player import HumanPlayer, DummyPlayer, PolicyPlayer
+from reversi.game.player import HumanPlayer, DummyPlayer, GreedyPlayer, PolicyPlayer
 from reversi.game.utils import getDefaultConfig
 
 if __name__ == '__main__':
-    config = getDefaultConfig(6)
+    config = getDefaultConfig(8)
 
-    p1 = PolicyPlayer(config, "runs/pg/policy_network_ckpt_2000.pth")
+    p1 = GreedyPlayer(config)
     p2 = DummyPlayer(config)
 
     score = {0:0, 1:0, 2:0}
