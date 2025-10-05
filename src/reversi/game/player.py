@@ -61,3 +61,21 @@ class PolicyPlayer(Player):
     def generateMove(self, board):
         move, _ = self.agent.selectAction(board, do_sample=False)
         return move
+
+
+class MinmaxPlayer(Player):
+    def __init__(self, depth: int, eval_type: str = 'naive'):
+        super().__init__("minmax")
+
+        from reversi.agents.minmax.evaluator import NaiveEvaluator, BorderEvaluator
+        from reversi.agents.minmax.minmax import MinmaxSearcher
+        if eval_type == 'naive':
+            evaluator = NaiveEvaluator()
+        if eval_type == 'border':
+            evaluator = BorderEvaluator()
+            
+        self.searcher = MinmaxSearcher(evaluator)
+        self.depth = depth
+
+    def generateMove(self, board):
+        return self.searcher.bestMove(board, self.depth)
