@@ -11,7 +11,12 @@ class MinmaxSearcher:
         Generates the best move in terms of minimizing/maximizing evaluation in given depth. \\
         **Args**: role: 1 for max and -1 for min
         '''
-        if depth == 0 or board.getResult() >= 0:
+        if board.getResult() >= 0:
+            if board.getResult() == 1:
+                return None, 1000000.0
+            else:
+                return None, -1000000.0
+        if depth == 0:
             return None, self.evaluator.evaluate(board)
 
         moves = board.getAllLegalMoves()
@@ -22,7 +27,7 @@ class MinmaxSearcher:
         if len(moves) == 0:
             next_board = deepcopy(board)
             next_board.makeEmptyMove()
-            _, eval = self.minmaxMove(next_board, depth-1, -role)
+            _, eval = self.minmaxMove(next_board, depth, -role)
             return None, eval
 
         for move in moves:
